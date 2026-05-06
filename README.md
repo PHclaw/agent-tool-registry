@@ -13,6 +13,32 @@
 
 ---
 
+## 🏗️ How It Works
+
+```mermaid
+graph LR
+    subgraph "Your Code"
+    F1["def web_search()"]
+    F2["def read_file()"]
+    end
+    
+    subgraph "Registry"
+    R["Tool Registry"]
+    end
+    
+    subgraph "Output"
+    S["OpenAI Schema"]
+    end
+    
+    F1 --> R
+    F2 --> R
+    R --> S
+```
+
+Decorate → Register → Auto-schema → Use with LLMs
+
+---
+
 Built this because I was constantly copy-pasting tool definitions between projects. Now I register once and import everywhere.
 
 ## ✨ What It Does
