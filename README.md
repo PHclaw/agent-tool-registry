@@ -1,25 +1,36 @@
-# Agent Tool Registry
+<div align="center">
 
-> Register tools. Let agents find them. Done.
+# 🔧 Agent Tool Registry
 
-Built this because I was constantly copy-pasting tool definitions between projects. Now I just register once and import everywhere.
+**Register tools. Let agents find them. Done.**
 
-## Install
+[![PyPI](https://img.shields.io/pypi/v/agent-tool-registry?color=blue)](https://pypi.org/project/agent-tool-registry/)
+[![Python](https://img.shields.io/pypi/pyversions/agent-tool-registry)](https://pypi.org/project/agent-tool-registry/)
+[![License](https://img.shields.io/github/license/PHclaw/agent-tool-registry)](LICENSE)
+[![Pydantic](https://img.shields.io/badge/Pydantic-2.0+-green)](https://pypi.org/project/pydantic/)
+
+</div>
+
+---
+
+Built this because I was constantly copy-pasting tool definitions between projects. Now I register once and import everywhere.
+
+## ✨ What It Does
+
+1. 📝 **Register** Python functions as tools with metadata
+2. 🔍 **Discover** tools by name, tags, or description
+3. ✅ **Validate** inputs automatically — bad data never reaches your functions
+4. 🤖 **Generate** OpenAI-compatible schemas for LLM tool calling
+
+## 📦 Install
 
 ```bash
 pip install agent-tool-registry
 ```
 
-Requires Python 3.9+, Pydantic 2.0+.
+> Requires Python 3.9+, Pydantic 2.0+
 
-## What It Does
-
-1. Register Python functions as tools with metadata
-2. Let agents discover tools by name, tags, or description
-3. Auto-generate OpenAI-compatible schemas for LLM tool calling
-4. Validate inputs so bad data never reaches your functions
-
-## Register a Tool
+## 🚀 Quick Example
 
 ```python
 from agent_tool_registry import ToolRegistry
@@ -32,34 +43,31 @@ registry = ToolRegistry()
     tags=["search", "web"]
 )
 def web_search(query: str, max_results: int = 10) -> list[str]:
-    # Your implementation here
     return ["https://example.com/result1"]
-```
 
-## Use It
-
-```python
 # Find tools
-results = registry.find_tools("web.*")
-results = registry.find_by_tags(["search"])
-results = registry.search("internet")
+registry.find_tools("web.*")     # → [Tool("web.search")]
+registry.find_by_tags(["search"]) # → [Tool("web.search")]
 
 # Execute
 result = registry.execute("web.search", {"query": "Python tutorials"})
 ```
 
-## Get LLM Schemas
+---
+
+## 🤖 LLM Integration
+
+Get OpenAI-compatible schemas for tool calling:
 
 ```python
 # Single tool
 schema = registry.get_openai_schema("web.search")
 
-# All tools
+# All tools at once — pass directly to your LLM
 schemas = registry.get_all_openai_schemas()
-# Returns list of OpenAI function-calling compatible schemas
 ```
 
-The schema looks like:
+Generated schema:
 
 ```json
 {
@@ -70,8 +78,8 @@ The schema looks like:
     "parameters": {
       "type": "object",
       "properties": {
-        "query": {"type": "string"},
-        "max_results": {"type": "integer", "default": 10}
+        "query": { "type": "string" },
+        "max_results": { "type": "integer", "default": 10 }
       },
       "required": ["query"]
     }
@@ -79,24 +87,24 @@ The schema looks like:
 }
 ```
 
-## Namespaces
+## 📂 Namespaces
 
 Organize tools by category:
 
 ```python
 web = registry.namespace("web")
-db = registry.namespace("db")
+db  = registry.namespace("db")
 
-@web.tool(name="search", ...)
-def web_search(...): ...
+@web.tool(name="search", description="Search the web")
+def search(q: str) -> list[str]: ...
 
-@db.tool(name="query", ...)
-def db_query(...): ...
+@db.tool(name="query", description="Run SQL query")
+def query(sql: str) -> list[dict]: ...
 
 # Full names: "web.search", "db.query"
 ```
 
-## Validation
+## ✅ Input Validation
 
 Inputs are validated with Pydantic before hitting your function:
 
@@ -105,45 +113,60 @@ Inputs are validated with Pydantic before hitting your function:
 def add(x: int, y: int) -> int:
     return x + y
 
-# This works
-registry.execute("add", {"x": 1, "y": 2})
-
-# This raises ToolValidationError
-registry.execute("add", {"x": "oops", "y": 2})
+registry.execute("add", {"x": 1, "y": 2})  # → 3 ✅
+registry.execute("add", {"x": "oops", "y": 2})  # → ToolValidationError ❌
 ```
 
-## Real-World Example
+---
+
+## 🔍 Discovery
+
+| Method | What It Does |
+|---|---|
+| `find_tools("web.*")` | Glob match on tool names |
+| `find_by_tags(["search"])` | Find tools with specific tags |
+| `search("database")` | Full-text search on descriptions |
+| `list_tools()` | Get everything |
+
+---
+
+## 📖 API
+
+### Register
 
 ```python
-from agent_tool_registry import ToolRegistry
+# Decorator style
+@registry.tool(name="...", description="...", tags=[...])
+def my_tool(...): ...
 
-registry = ToolRegistry()
-
-@registry.tool(
-    name="file.read",
-    description="Read contents of a file",
-    tags=["file", "io"]
-)
-def read_file(path: str, encoding: str = "utf-8") -> str:
-    with open(path, "r", encoding=encoding) as f:
-        return f.read()
-
-@registry.tool(
-    name="file.write",
-    description="Write content to a file"
-)
-def write_file(path: str, content: str) -> None:
-    with open(path, "w") as f:
-        f.write(content)
-
-# Use with OpenAI
-schemas = registry.get_all_openai_schemas()
-# Pass to your LLM
+# Explicit style
+registry.register(fn, name="...", description="...", tags=[...])
 ```
 
-## Why Not Just Use Dictionaries?
+### Execute
 
-You can. But:
+```python
+registry.execute("tool.name", {"param": "value"})
+```
+
+### Schema
+
+```python
+registry.get_openai_schema("tool.name")
+registry.get_all_openai_schemas()
+```
+
+### Namespace
+
+```python
+web = registry.namespace("web")
+```
+
+---
+
+## 💡 Why Not Just Use Dicts?
+
+You can. But with this you also get:
 
 - Automatic schema generation from function signatures
 - Input validation out of the box
@@ -151,33 +174,8 @@ You can. But:
 - Namespace support
 - Consistent interface across projects
 
-## API
+---
 
-```python
-registry = ToolRegistry()
+## 📄 License
 
-# Register
-@registry.tool(name="...", description="...", tags=[...])
-def my_tool(...): ...
-
-registry.register(fn, name="...", description="...", tags=[...])
-
-# Discover
-registry.find_tools("pattern")     # glob match
-registry.find_by_tags(["tag1"])   # tools with these tags
-registry.search("description")     # search descriptions
-
-# Execute
-registry.execute("tool.name", {"param": "value"})
-
-# Schema
-registry.get_openai_schema("tool.name")
-registry.get_all_openai_schemas()
-
-# Sub-registry
-web = registry.namespace("web")
-```
-
-## License
-
-MIT
+[MIT](LICENSE) — do whatever you want with it.
